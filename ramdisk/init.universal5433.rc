@@ -83,7 +83,7 @@ on boot
     mkdir /efs/FactoryApp 0775 system system
 
     # SSWAP
-    write /proc/sys/vm/swappiness 130
+    write /proc/sys/vm/swappiness 100
 
     # For kernel lock in BT/WiFi race condtion
     chmod 0600 /dev/btlock
@@ -92,11 +92,11 @@ on boot
 	# DualWave
     chown system system /sys/kernel/DualWave/sound/DUALWAVE_CONFIG
 
-    #setprop ro.radio.noril yes
+    setprop ro.radio.noril no
 
     # Set up kernel tracing, but disable it by default
     chmod 0222 /sys/kernel/debug/tracing/trace_marker
-    write /sys/kernel/debug/tracing/tracing_on 0
+    write /sys/kernel/debug/tracing/tracing_on 1
 
 # Switch Device
     chown system radio /sys/class/sec/switch/uart_en
@@ -587,7 +587,6 @@ on property:ro.SecEDS.enable=false
 service watchdogd /sbin/watchdogd 10 20
     class core
     seclabel u:r:watchdogd:s0
-    disabled
 
 # Kick watchdogd if debug_level is low
 on property:ro.debug_level=0x4f4c
@@ -618,7 +617,7 @@ on property:ril.cbd.modechan=2
 
 # AT Distributor for factory test
 service at_distributor /system/bin/at_distributor
-    class late_start
+    class main
     user root
     group radio misc log
 
@@ -641,7 +640,7 @@ on property:ro.bootmode=charger
 on property:ro.bootmode=charger
     wait /dev/block/platform/15540000.dwmmc0/by-name/EFS
     check_fs /dev/block/platform/15540000.dwmmc0/by-name/EFS ext4
-    mount ext4 /dev/block/platform/15540000.dwmmc0/by-name/EFS /efs nosuid nodev noatime noauto_da_alloc,discard,journal_async_commit
+    mount ext4 /dev/block/platform/15540000.dwmmc0/by-name/EFS /efs nosuid nodev noatime noauto_da_alloc
 
 on charger
     # Set cpu governor to powersave while in charging mode
@@ -661,17 +660,16 @@ service gpsd /system/bin/gpsd -c /system/etc/gps.xml
     class main
     user gps
     group system wakelock inet net_raw
-    ioprio be 0
 
 # SENSOR FRAMEWORK : starts fingerprintService
 service vcsFPService /system/bin/vcsFPService
-    class late_start		
+    class main		
     user system		
     group system
 
 # FINGERPRINT FRAMEWORK : starts fingerprintd		
 service fingerprintd /system/bin/fingerprintd
-    class late_start
+    class main
     user system
     group system
 
@@ -680,7 +678,6 @@ service cs_service /system/bin/cs
     class main
     user system
     group system
-    disabled
 
 on property:sys.mobicoredaemon.enable=true
     start cs_service
@@ -691,7 +688,6 @@ service secure_storage /system/bin/secure_storage_daemon
     class core
     user system
     group system
-    disabled
 
 on property:ro.securestorage.support=true
     mkdir /dev/.secure_storage
@@ -725,11 +721,10 @@ service rtc_log /system/bin/rtc_log.sh
 
 # umount service
 service umount_service /system/bin/umount -D /preload
-    disabled
     oneshot
 
 on property:persist.sys.storage_preload=1
-    mount ext4 /dev/block/platform/15540000.dwmmc0/by-name/HIDDEN /preload nosuid nodev noatime wait ro
+    mount ext4 /dev/block/platform/15540000.dwmmc0/by-name/HIDDEN /preload nosuid nodev noatime wait rw
     setprop storage.preload.complete 1
 
 on property:persist.sys.storage_preload=0
@@ -737,4 +732,5 @@ on property:persist.sys.storage_preload=0
 
 # Reactivation lock		
 service reactived /system/bin/reactived		
-    class late_start
+    class main
+    disabled
